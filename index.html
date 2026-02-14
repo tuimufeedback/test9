@@ -1,90 +1,242 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>PRE-Client — Parallel Redirect Engine (Client)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aff Short Tool</title>
+
 <style>
-  :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a,#0b1220);color:#fff}
-  .card{width:94%;max-width:520px;padding:24px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));box-shadow:0 8px 30px rgba(2,6,23,0.6);text-align:center}
-  h1{margin:0 0 6px;font-size:18px}
-  p{margin:6px 0 16px;color:#cbd5e1;font-size:14px}
-  .btn{display:inline-block;padding:12px 18px;border-radius:10px;background:#ff7a59;color:#111;font-weight:700;text-decoration:none;box-shadow:0 6px 18px rgba(255,122,89,0.18)}
-  .small{font-size:13px;color:#94a3b8;margin-top:10px}
-  a.inline{color:#7ee3bd}
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#5f5af6,#7b2ff7);
+}
+
+.container{
+    width:95%;
+    max-width:520px;
+    padding:35px;
+    border-radius:20px;
+    backdrop-filter: blur(25px);
+    background:rgba(255,255,255,0.1);
+    box-shadow:0 20px 45px rgba(0,0,0,0.3);
+    color:#fff;
+    animation:fadeIn 0.6s ease;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:25px;
+    font-weight:600;
+}
+
+.input-group{
+    display:flex;
+    gap:10px;
+}
+
+input{
+    flex:1;
+    padding:12px;
+    border-radius:12px;
+    border:none;
+    font-size:14px;
+}
+
+button{
+    padding:12px 18px;
+    border:none;
+    border-radius:12px;
+    background:#fff;
+    color:#333;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+.result{
+    margin-top:20px;
+    word-break:break-all;
+}
+
+.link-box{
+    background:rgba(255,255,255,0.15);
+    padding:12px;
+    border-radius:12px;
+    margin-top:12px;
+}
+
+.copy-btn{
+    margin-top:8px;
+    padding:6px 10px;
+    font-size:12px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+}
+
+.note{
+    font-size:12px;
+    opacity:0.7;
+    margin-top:15px;
+    text-align:center;
+}
+
+@keyframes fadeIn{
+    from{opacity:0; transform:translateY(20px);}
+    to{opacity:1; transform:translateY(0);}
+}
 </style>
 </head>
+
 <body>
-  <div class="card">
-    <h1>PRE-Client — Parallel Redirect Engine</h1>
-    <p>Trang này tự động mở ứng dụng Shopee trên Android (intent) hoặc chuyển về link iOS. Nếu không tự mở, bấm nút bên dưới.</p>
-    <a id="manual" class="btn" href="#" onclick="manualOpen();return false;">Mở thủ công</a>
-    <div class="small">Nếu bạn dùng GitHub Pages, đặt file này làm index.html và gắn link GitHub lên Beacons.</div>
-  </div>
+
+<div id="app"></div>
 
 <script>
-const shopeeCode = "805SQETqCU";
-const iosUrl = `https://s.shopee.vn/${shopeeCode}`;
-const androidIntent = `intent://s.shopee.vn/${shopeeCode}#Intent;scheme=https;package=com.shopee.vn;end`;
-const chromeNavigate = `googlechrome://navigate?url=${encodeURIComponent(iosUrl)}`;
-const chromeIntent = `intent://s.shopee.vn/${shopeeCode}#Intent;package=com.android.chrome;scheme=https;S.browser_fallback_url=${encodeURIComponent(iosUrl)};end`;
 
-const FIRST_DELAY = 10;
-const RETRY_SHORT = 120;
-const RETRY_LONG = 700;
-const FINAL_FALLBACK = 1400;
+// ======================
+// CHECK REDIRECT MODE
+// ======================
 
-const ua = navigator.userAgent || "";
-const isIOS = /iphone|ipad|ipod/i.test(ua);
-const isAndroid = /android/i.test(ua);
+const params = new URLSearchParams(window.location.search);
+const code = params.get("code");
 
-function safeOpen(url) {
-  try { window.location.href = url; } catch(e){}
+function getLinks(){
+    return JSON.parse(localStorage.getItem("links")) || {};
 }
 
-function manualOpen(){
-  if (isIOS) safeOpen(iosUrl);
-  else safeOpen(androidIntent);
+if(code){
+    const links = getLinks();
+    if(links[code]){
+        window.location.href = links[code];
+    }else{
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Link không tồn tại</h2>";
+    }
+}else{
+
+// ======================
+// TOOL UI
+// ======================
+
+document.getElementById("app").innerHTML = `
+<div class="container">
+    <h1>🔗 AFF Short Link Tool</h1>
+
+    <div class="input-group">
+        <input type="text" id="longUrl" placeholder="Dán link AFF Shopee...">
+        <button onclick="generateShort()">Tạo</button>
+    </div>
+
+    <div class="result" id="result"></div>
+    <div id="history"></div>
+
+    <div class="note">
+        Chỉ hỗ trợ AFF ID hợp lệ.
+    </div>
+</div>
+`;
+
 }
 
-function runPreClient() {
-  if (isIOS) {
-    setTimeout(()=>{ window.location.replace(iosUrl); }, FIRST_DELAY+10);
-    return;
-  }
+// ======================
+// SECURITY + SHORT LOGIC
+// ======================
 
-  try {
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = androidIntent;
-    document.body.appendChild(iframe);
-  } catch(e){}
+// AFF ID đã mã hoá base64
+const encodedAff = "MTczNDc5NTAyMTU=";
+const MY_AFF_ID = atob(encodedAff);
 
-  try {
-    const win = window.open(androidIntent, '_blank');
-    if (win) win.focus();
-  } catch(e){}
-
-  setTimeout(()=>{ safeOpen(androidIntent); }, FIRST_DELAY);
-  setTimeout(()=>{ safeOpen(chromeNavigate); }, FIRST_DELAY + 30);
-  setTimeout(()=>{ safeOpen(chromeIntent); }, FIRST_DELAY + 80);
-
-  try {
-    const a = document.createElement('a');
-    a.href = androidIntent;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    setTimeout(()=>{ a.click(); }, FIRST_DELAY + 120);
-  } catch(e){}
-
-  setTimeout(()=>{ safeOpen(androidIntent); safeOpen(chromeNavigate); }, RETRY_SHORT);
-  setTimeout(()=>{ safeOpen(androidIntent); safeOpen(chromeIntent); }, RETRY_LONG);
-  setTimeout(()=>{ window.location.replace(iosUrl); }, FINAL_FALLBACK);
+function generateCode(length = 7){
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let code="";
+    for(let i=0;i<length;i++){
+        code += chars.charAt(Math.floor(Math.random()*chars.length));
+    }
+    return code;
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(runPreClient, 6); });
-document.getElementById('manual').addEventListener('click', manualOpen);
+function saveLink(code,url){
+    let links = getLinks();
+    links[code] = url;
+    localStorage.setItem("links", JSON.stringify(links));
+}
+
+function generateShort(){
+
+    const longUrl = document.getElementById("longUrl").value.trim();
+
+    if(!longUrl){
+        alert("Vui lòng nhập link!");
+        return;
+    }
+
+    try{
+        const url = new URL(longUrl);
+        const affId = url.searchParams.get("af_id");
+
+        if(!affId || affId !== MY_AFF_ID){
+            alert("Link AFF không đúng tài khoản!");
+            return;
+        }
+
+    }catch(e){
+        alert("Link không hợp lệ!");
+        return;
+    }
+
+    const code = generateCode();
+    saveLink(code,longUrl);
+
+    const baseUrl = window.location.href.split("?")[0];
+    const shortLink = baseUrl + "?code=" + code;
+
+    document.getElementById("result").innerHTML =
+        `<div class="link-box">
+            ${shortLink}
+            <br>
+            <button class="copy-btn" onclick="copyLink('${shortLink}')">Copy</button>
+        </div>`;
+
+    renderHistory();
+}
+
+function copyLink(link){
+    navigator.clipboard.writeText(link);
+    alert("Đã copy!");
+}
+
+function renderHistory(){
+    const links = getLinks();
+    let html="";
+    for(const code in links){
+        const short = window.location.href.split("?")[0] + "?code=" + code;
+        html += `
+        <div class="link-box">
+            ${short}
+            <br>
+            <button class="copy-btn" onclick="copyLink('${short}')">Copy</button>
+        </div>`;
+    }
+    document.getElementById("history").innerHTML = html;
+}
+
+renderHistory();
+
 </script>
+
 </body>
 </html>
