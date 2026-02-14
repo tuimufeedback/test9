@@ -3,238 +3,135 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aff Short Tool</title>
-
+<title>Short Link Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family: 'Segoe UI', sans-serif;
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg,#1e3c72,#2a5298);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
 }
 
-body{
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:linear-gradient(135deg,#5f5af6,#7b2ff7);
+.container {
+  background:white;
+  padding:35px;
+  border-radius:20px;
+  width:420px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.2);
+  text-align:center;
 }
 
-.container{
-    width:95%;
-    max-width:520px;
-    padding:35px;
-    border-radius:20px;
-    backdrop-filter: blur(25px);
-    background:rgba(255,255,255,0.1);
-    box-shadow:0 20px 45px rgba(0,0,0,0.3);
-    color:#fff;
-    animation:fadeIn 0.6s ease;
+h1 {
+  margin-bottom:25px;
+  color:#2a5298;
 }
 
-h1{
-    text-align:center;
-    margin-bottom:25px;
-    font-weight:600;
+input {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ddd;
+  margin-bottom:15px;
+  font-size:14px;
 }
 
-.input-group{
-    display:flex;
-    gap:10px;
+button {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#2a5298;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.3s;
 }
 
-input{
-    flex:1;
-    padding:12px;
-    border-radius:12px;
-    border:none;
-    font-size:14px;
+button:hover {
+  background:#1e3c72;
 }
 
-button{
-    padding:12px 18px;
-    border:none;
-    border-radius:12px;
-    background:#fff;
-    color:#333;
-    font-weight:bold;
-    cursor:pointer;
-    transition:0.3s;
+.result {
+  margin-top:20px;
+  font-size:14px;
+  word-break:break-all;
 }
 
-button:hover{
-    transform:scale(1.05);
+.error {
+  color:red;
+  font-size:13px;
+  margin-top:10px;
 }
 
-.result{
-    margin-top:20px;
-    word-break:break-all;
-}
-
-.link-box{
-    background:rgba(255,255,255,0.15);
-    padding:12px;
-    border-radius:12px;
-    margin-top:12px;
-}
-
-.copy-btn{
-    margin-top:8px;
-    padding:6px 10px;
-    font-size:12px;
-    border-radius:8px;
-    border:none;
-    cursor:pointer;
-}
-
-.note{
-    font-size:12px;
-    opacity:0.7;
-    margin-top:15px;
-    text-align:center;
-}
-
-@keyframes fadeIn{
-    from{opacity:0; transform:translateY(20px);}
-    to{opacity:1; transform:translateY(0);}
+.success {
+  color:green;
 }
 </style>
 </head>
 
 <body>
 
-<div id="app"></div>
+<div class="container">
+  <h1>Short Link Tool</h1>
+
+  <input type="text" id="longUrl" placeholder="Dán link Shopee affiliate tại đây">
+  <button onclick="shortLink()">Tạo Short Link</button>
+
+  <div id="message"></div>
+  <div class="result" id="result"></div>
+</div>
 
 <script>
 
-// ======================
-// CHECK REDIRECT MODE
-// ======================
+// ID đã mã hoá base64 để không lộ
+const encodedAff = "YW5fMTczNjQ4NzAwNTg=";
+const REQUIRED_AFF = atob(encodedAff);
 
-const params = new URLSearchParams(window.location.search);
-const code = params.get("code");
+function shortLink() {
 
-function getLinks(){
-    return JSON.parse(localStorage.getItem("links")) || {};
+  let url = document.getElementById("longUrl").value.trim();
+  let message = document.getElementById("message");
+  let result = document.getElementById("result");
+
+  message.innerHTML = "";
+  result.innerHTML = "";
+
+  if(!url.includes("shopee.vn")) {
+    message.innerHTML = "<div class='error'>Link không hợp lệ</div>";
+    return;
+  }
+
+  if(!url.includes(REQUIRED_AFF)) {
+    message.innerHTML = "<div class='error'>Link không hợp lệ</div>";
+    return;
+  }
+
+  let code = Math.random().toString(36).substring(2,8);
+
+  localStorage.setItem(code, url);
+
+  let shortUrl = window.location.origin + window.location.pathname + "?code=" + code;
+
+  result.innerHTML = "<div class='success'>Tạo thành công:</div><br><a href='"+shortUrl+"' target='_blank'>"+shortUrl+"</a>";
 }
 
-if(code){
-    const links = getLinks();
-    if(links[code]){
-        window.location.href = links[code];
-    }else{
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Link không tồn tại</h2>";
+function redirect() {
+  let params = new URLSearchParams(window.location.search);
+  let code = params.get("code");
+
+  if(code) {
+    let longUrl = localStorage.getItem(code);
+    if(longUrl) {
+      window.location.href = longUrl;
     }
-}else{
-
-// ======================
-// TOOL UI
-// ======================
-
-document.getElementById("app").innerHTML = `
-<div class="container">
-    <h1>🔗 AFF Short Link Tool</h1>
-
-    <div class="input-group">
-        <input type="text" id="longUrl" placeholder="Dán link AFF Shopee...">
-        <button onclick="generateShort()">Tạo</button>
-    </div>
-
-    <div class="result" id="result"></div>
-    <div id="history"></div>
-
-    <div class="note">
-        Chỉ hỗ trợ AFF ID hợp lệ.
-    </div>
-</div>
-`;
-
+  }
 }
 
-// ======================
-// SECURITY + SHORT LOGIC
-// ======================
-
-// AFF ID đã mã hoá base64
-const encodedAff = "MTczNDc5NTAyMTU=";
-const MY_AFF_ID = atob(encodedAff);
-
-function generateCode(length = 7){
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let code="";
-    for(let i=0;i<length;i++){
-        code += chars.charAt(Math.floor(Math.random()*chars.length));
-    }
-    return code;
-}
-
-function saveLink(code,url){
-    let links = getLinks();
-    links[code] = url;
-    localStorage.setItem("links", JSON.stringify(links));
-}
-
-function generateShort(){
-
-    const longUrl = document.getElementById("longUrl").value.trim();
-
-    if(!longUrl){
-        alert("Vui lòng nhập link!");
-        return;
-    }
-
-    try{
-        const url = new URL(longUrl);
-        const affId = url.searchParams.get("af_id");
-
-        if(!affId || affId !== MY_AFF_ID){
-            alert("Link AFF không đúng tài khoản!");
-            return;
-        }
-
-    }catch(e){
-        alert("Link không hợp lệ!");
-        return;
-    }
-
-    const code = generateCode();
-    saveLink(code,longUrl);
-
-    const baseUrl = window.location.href.split("?")[0];
-    const shortLink = baseUrl + "?code=" + code;
-
-    document.getElementById("result").innerHTML =
-        `<div class="link-box">
-            ${shortLink}
-            <br>
-            <button class="copy-btn" onclick="copyLink('${shortLink}')">Copy</button>
-        </div>`;
-
-    renderHistory();
-}
-
-function copyLink(link){
-    navigator.clipboard.writeText(link);
-    alert("Đã copy!");
-}
-
-function renderHistory(){
-    const links = getLinks();
-    let html="";
-    for(const code in links){
-        const short = window.location.href.split("?")[0] + "?code=" + code;
-        html += `
-        <div class="link-box">
-            ${short}
-            <br>
-            <button class="copy-btn" onclick="copyLink('${short}')">Copy</button>
-        </div>`;
-    }
-    document.getElementById("history").innerHTML = html;
-}
-
-renderHistory();
+redirect();
 
 </script>
 
